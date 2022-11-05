@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { Component } from 'react';
+import { useState } from 'react';
 import { toast } from 'react-toastify';
 import {
   SearchbarStyle,
@@ -9,31 +9,25 @@ import {
   Input,
 } from './Searchbar.styled';
 
-export default class Searchbar extends Component {
-  state = {
-    image: '',
+export default function Searchbar({onSubmit}) {
+  const [image, setImage] = useState('')
+
+  const handleImageChange = e => {
+    setImage(e.currentTarget.value.toLowerCase());
   };
 
-  handleImageChange = e => {
-    this.setState({
-      image: e.currentTarget.value.toLowerCase(),
-    });
-  };
-
-  handleSubmit = e => {
+  const handleSubmit = e => {
     e.preventDefault();
-    if (this.state.image.trim() === '') {
+    if (image.trim() === '') {
       toast.error('The field cannot be empty');
       return;
     }
-    this.props.onSubmit(this.state.image);
-    // console.log(this.state.image);
-    this.setState({ image: '' });
+    onSubmit(image);
+    setImage('');
   };
 
-  render() {
     return (
-      <SearchbarStyle onSubmit={this.handleSubmit}>
+      <SearchbarStyle onSubmit={handleSubmit}>
         <SearchForm>
           <Button type="submit">
             <ButtonLabel>Search</ButtonLabel>
@@ -45,14 +39,14 @@ export default class Searchbar extends Component {
             autoComplete="off"
             autoFocus
             placeholder="Search images and photos"
-            value={this.state.image}
-            onChange={this.handleImageChange}
+            value={image}
+            onChange={handleImageChange}
           />
         </SearchForm>
       </SearchbarStyle>
     );
-  }
 }
+  
 Searchbar.propTypes = {
   onSubmit: PropTypes.func.isRequired,
 };

@@ -1,59 +1,67 @@
-import { Component } from 'react';
-import { ToastContainer} from 'react-toastify';
+import { useState, useEffect } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import DotLoader from "react-spinners/DotLoader";
+import DotLoader from 'react-spinners/DotLoader';
 import Searchbar from './Searchbar';
 import ImageGallery from './ImageGallery';
-import { PixabayApi } from "./utils/GalleryApi";
-import Button from "./Button";
-import { DotLoaderStyle } from "./App.styled";
+import { PixabayApi } from './utils/GalleryApi';
+import Button from './Button';
+import { DotLoaderStyle } from './App.styled';
 
-export class App extends Component {
-  state = {
-    images: [],
-    page: 1,
-    query: '',
-    loading: false,
-    error: null,
-    btn: false,
-  };
+export default function App() {
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  // const [btn, setBtn] = useState(false)
 
-  componentDidUpdate(prevProps, prevState) {
-    const { page, query } = this.state;
-    if (prevState.query !== query || prevState.page !== page) {
-      this.setState({ loading: true});
-      PixabayApi(query, page)
-        .then(data => this.setState(prevState => {
-          return {images: [...prevState.images, ...data.data.hits]}
-        }))
-        .catch(error => this.setState({ error }))
-        .finally(() => this.setState({ loading: false }));
+  useEffect(() => {
+    if (!query) {
+      return;
     }
-  }
+    setLoading(true);
+    PixabayApi(query, page)
+      .then(data => {
+        if (data.data.total === 0) {
+          return toast.error(`Image by request ${query} not found`, {
+            position: "bottom-center",
+            theme: "dark",
+          });
+        }
+        setImages(prevState => [...prevState, ...data.data.hits]);
+      })
+      .catch(error => {
+        setError(true);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [query, page]);
 
-  formSubmit = (query) => {
-    this.setState({ query, page: 1, images: []});
+  const formSubmit = e => {
+    setQuery(e);
+    setPage(1);
+    setImages([]);
   };
 
   // метод загрузить еще
-  loadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }))
-  }
+  const loadMore = () => {
+    setPage(prevState => prevState + 1);
+  };
 
-  render() {
-    const {images, error, loading} = this.state
-    return (
-      <>
-        <Searchbar onSubmit={this.formSubmit} />
-        {error && <h1>{error.message}</h1>}
-        {loading && <DotLoaderStyle><DotLoader color="#36d7b7" /></DotLoaderStyle>}
-        {images.length > 0 && <ImageGallery images={images} />}
-        {images.length > 0 && <Button onClick={this.loadMore} />}
-        <ToastContainer autoClose={1000} />
-      </>
-    );
-  }
+  return (
+    <>
+      <Searchbar onSubmit={formSubmit} />
+      {error && <h1>{error.message}</h1>}
+      {loading && (
+        <DotLoaderStyle>
+          <DotLoader color="#36d7b7" />
+        </DotLoaderStyle>
+      )}
+      {images.length > 0 && <ImageGallery images={images} />}
+      {images.length >= 12 && <Button onClick={loadMore} />}
+      <ToastContainer autoClose={2000} />
+    </>
+  );
 }
-
